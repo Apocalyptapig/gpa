@@ -1,3 +1,5 @@
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+
 use chrono::prelude::*;
 use ron::ser::{to_string_pretty, PrettyConfig};
 use serde::{Deserialize, Serialize};
@@ -14,7 +16,7 @@ struct Class {
 }
 
 #[derive(Eq, PartialEq, Ord, PartialOrd, Copy, Clone, Deserialize, Serialize)]
-struct Entry(DateTime<Local>, u8); 
+struct Entry(DateTime<Local>, u8);
 
 fn main() {
     let file = read_to_string("./data.ron").unwrap();
@@ -24,6 +26,8 @@ fn main() {
     cli::parse(&mut data);
 
     save_to_file(data);
+
+    //crate::gui::test();
 }
 
 fn save_to_file(data: Data) {
@@ -98,7 +102,7 @@ mod cli {
     use term_grid::*;
 
     impl Data {
-        fn print(&self) {
+        fn print(&self, verbose: bool) {
             let table = self.organize();
 
             let mut grid = Grid::new(GridOptions {
@@ -113,7 +117,12 @@ mod cli {
             }
             
             for (n, i) in table.iter().enumerate() {
-                grid.add(Cell::from(format!("_{}_", n.to_string())));
+                let cell = match verbose {
+                    true => Cell::from(format!("_{}_", n.to_string())),
+                    false => Cell::from(self.0[n].name.clone())
+                };
+
+                grid.add(cell);
 
                 for j in i {
                     let s = match j {
@@ -183,21 +192,50 @@ mod cli {
 
             Commands::Display(_) => (),
         }
-        data.print();
+        data.print(!cli.verbose);
     }
 }
 
-// todo
+mod gui {
+    use eframe::egui;
 
-// log exists
-    // class given, input given => write to class
-        // class exists, write to it
-        // class does not exist, write it
+    pub fn test() {
+        let options = eframe::NativeOptions::default();
+        eframe::run_native(
+            "My egui App",
+            options,
+            Box::new(|_cc| Box::new(MyApp::default())),
+        );
+    }
 
-    // class given => query class
-        // class exists, return value
-        // class does not exist, PANIC
-
-// log does not exist
-    // class given, input given => create log with (class, input) input
-    // _ => PANIC
+    struct MyApp {
+        name: String,
+        age: u32,
+    }
+    
+    impl Default for MyApp {
+        fn default() -> Self {
+            Self {
+                name: "Arthur".to_owned(),
+                age: 42,
+            }
+        }
+    }
+    
+    impl eframe::App for MyApp {
+        fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+            egui::CentralPanel::default().show(ctx, |ui| {
+                ui.heading("My egui Application");
+                ui.horizontal(|ui| {
+                    ui.label("Your name: ");
+                    ui.text_edit_singleline(&mut self.name);
+                });
+                ui.add(egui::Slider::new(&mut self.age, 0..=120).text("age"));
+                if ui.button("Click each year").clicked() {
+                    self.age += 1;
+                }
+                ui.label(format!("Hello '{}', age {}", self.name, self.age));
+            });
+        }
+    }
+}
