@@ -831,7 +831,6 @@ dependencies = [
  "chrono",
  "clap",
  "eframe",
- "egui",
  "ron",
  "serde",
  "term_grid",
