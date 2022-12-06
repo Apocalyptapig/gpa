@@ -1,11 +1,11 @@
-use crate::Data;
+use crate::{Data, BLANK};
 use chrono::prelude::*;
 use clap::{Args, Parser, Subcommand};
 use term_grid::*;
 
 impl Data {
     fn print(&self, verbose: bool) {
-        let table = self.organize();
+        let table = self.make_naive_grid();
 
         let mut grid = Grid::new(GridOptions {
             filling: Filling::Text(" | ".to_string()),
@@ -28,7 +28,7 @@ impl Data {
 
             for j in i {
                 let s = match j {
-                    DEFAULT => "[!]".to_string(),
+                    &BLANK => "[!]".to_string(),
                     _ => j.to_string(),
                 };
                 grid.add(Cell::from(s));
@@ -36,6 +36,7 @@ impl Data {
         }
 
         let r = grid.fit_into_columns(table.len() + 1);
+
         print!("{r}");
     }
 }
@@ -64,6 +65,9 @@ enum Commands {
 
     #[command(alias = "r")]
     Rename(Rename),
+
+    #[command(alias = "nr")]
+    NewClass(NewClass),
 }
 
 #[derive(Args)]
@@ -87,6 +91,11 @@ struct Rename {
     new_class_name: String,
 }
 
+#[derive(Args)]
+struct NewClass {
+    new_class_name: String,
+}
+
 pub fn parse(data: &mut Data) {
     let cli = Cli::parse();
 
@@ -98,12 +107,14 @@ pub fn parse(data: &mut Data) {
         }
 
         Commands::New(_) => {
-            data.create_default_row(timestamp);
+            data.create_blank_row(timestamp);
         }
 
         Commands::Display(_) => (),
 
         Commands::Rename(rename) => data.rename_class(rename.old_class_name, rename.new_class_name),
+
+        Commands::NewClass(new_class) => data.create_blank_class(new_class.new_class_name),
     }
     data.print(!cli.verbose);
 }
