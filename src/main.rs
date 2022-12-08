@@ -4,7 +4,7 @@ use chrono::prelude::*;
 use ron::ser::{to_string_pretty, PrettyConfig};
 use serde::{Deserialize, Serialize};
 use std::{
-    fs::{read_to_string, OpenOptions},
+    fs::{read_to_string, OpenOptions, File},
     io::prelude::*,
 };
 
@@ -30,38 +30,60 @@ struct Class {
 struct Entry(DateTime<Local>, u8);
 
 fn main() {
-    let file = read_to_string("./data.ron").unwrap();
+    let file = read_to_string("./data.ron");
+    
+    let mut data = match file {
+        Ok(file) => ron::from_str(&file).unwrap(),
+        Err(_) => Data::new()
+    };
 
-    let mut data: Data = ron::from_str(&file).unwrap();
-
-    let gui_debug = true;
+    let gui_debug = false;
 
     if gui_debug {
-
         gui::test_gui(data);
-
     } else {
-    
         cli::parse(&mut data);
 
         data.save_to_file()
-
     }
 }
 
 impl Data {
+    fn new() -> Self {
+        Self {
+            classes: vec!(
+                Class {
+                    name: "default".to_string(),
+                    entries: vec!(
+                        Entry(
+                            Local::now(),
+                            255
+                        )
+                    )
+                }
+            )
+        }
+    }
+
     fn save_to_file(self) {
-        let mut f = OpenOptions::new()
+        let data_file = OpenOptions::new()
             .write(true)
             .truncate(true)
-            .open("./data.ron")
-            .unwrap();
+            .open("./data.ron");
+
+        let mut open_file = match data_file {
+            Ok(file) => file,
+            Err(_) => {
+                File::create("./data.ron")
+                    .expect("file creation messed up. what did you do?")
+            }
+        };
 
         let config = PrettyConfig::new()
             .struct_names(true)
             .enumerate_arrays(true);
 
-        f.write_all((to_string_pretty(&self, config)).unwrap().as_bytes())
+        open_file.write_all((to_string_pretty(&self, config)).unwrap().as_bytes())
             .unwrap();
     }
 
@@ -81,7 +103,7 @@ impl Data {
         naive_grid
     }
 
-    fn create_blank_class(&mut self, class_name: String) {
+    fn new_blank_class(&mut self, class_name: String) {
         let existing_entries = self.classes[0].entries.clone();
         let mut blank_entries = Vec::new();
 
@@ -95,7 +117,7 @@ impl Data {
         });
     }
 
-    fn create_blank_row(&mut self, timestamp: DateTime<Local>) {
+    fn new_blank_row(&mut self, timestamp: DateTime<Local>) {
         for i in self.classes.iter_mut() {
             i.entries.push(Entry(timestamp, BLANK));
             i.entries.sort();
@@ -122,13 +144,5 @@ impl Data {
 
     fn set(&mut self, x: usize, y: usize, input: u8) {
         self.classes[x].entries[y].1 = input;
-    }
-
-    fn rename_class(&mut self, old_class_name: String, new_class_name: String) {
-        for class in self.classes.iter_mut() {
-            if class.name == old_class_name {
-                class.name = new_class_name.clone();
-            }
-        }
     }
 }

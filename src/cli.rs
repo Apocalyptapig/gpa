@@ -20,7 +20,7 @@ impl Data {
 
         for (n, i) in table.iter().enumerate() {
             let cell = match verbose {
-                true => Cell::from(format!("_{}_", n.to_string())),
+                true => Cell::from(format!("_{}_", n)),
                 false => Cell::from(self.classes[n].name.clone()),
             };
 
@@ -66,7 +66,7 @@ enum Commands {
     #[command(alias = "r")]
     Rename(Rename),
 
-    #[command(alias = "nr")]
+    #[command(alias = "nc")]
     NewClass(NewClass),
 }
 
@@ -87,13 +87,13 @@ struct New;
 
 #[derive(Args)]
 struct Rename {
-    old_class_name: String,
-    new_class_name: String,
+    from: String,
+    into: String,
 }
 
 #[derive(Args)]
 struct NewClass {
-    new_class_name: String,
+    name: String,
 }
 
 pub fn parse(data: &mut Data) {
@@ -107,14 +107,20 @@ pub fn parse(data: &mut Data) {
         }
 
         Commands::New(_) => {
-            data.create_blank_row(timestamp);
+            data.new_blank_row(timestamp);
         }
 
         Commands::Display(_) => (),
 
-        Commands::Rename(rename) => data.rename_class(rename.old_class_name, rename.new_class_name),
+        Commands::Rename(rename) => {
+            for class in data.classes.iter_mut() {
+                if class.name == rename.from {
+                    class.name = rename.into.clone()
+                }
+            }
+        }
 
-        Commands::NewClass(new_class) => data.create_blank_class(new_class.new_class_name),
+        Commands::NewClass(new_class) => data.new_blank_class(new_class.name),
     }
     data.print(!cli.verbose);
 }

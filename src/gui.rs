@@ -1,13 +1,9 @@
-use eframe::egui;
 use crate::{Data, BLANK};
+use eframe::egui;
 
 pub fn test_gui(data: Data) {
     let options = eframe::NativeOptions::default();
-    eframe::run_native(
-        "My egui App",
-        options,
-        Box::new(|_cc| Box::new(data)),
-    );
+    eframe::run_native("My egui App", options, Box::new(|_cc| Box::new(data)));
 }
 
 impl Data {
