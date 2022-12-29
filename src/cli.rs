@@ -1,43 +1,61 @@
-use crate::{Data, BLANK};
+use crate::{Data, BLANK, Transpose};
 use chrono::prelude::*;
 use clap::{Args, Parser, Subcommand};
-use term_grid::*;
+use comfy_table::*;
+use comfy_table::presets::UTF8_FULL;
 
 impl Data {
     fn print(&self, verbose: bool) {
-        let table = self.make_naive_grid();
+        let mut table = Table::new();
+        table.load_preset(UTF8_FULL)
+            .set_content_arrangement(ContentArrangement::Dynamic)
+            .set_width(80);
 
-        let mut grid = Grid::new(GridOptions {
-            filling: Filling::Text(" | ".to_string()),
-            direction: Direction::TopToBottom,
-        });
+        let mut header = vec![Cell::new("")];
 
-        grid.add(Cell::from("".to_string()));
-
-        for i in 0..table[0].len() {
-            grid.add(Cell::from(i.to_string()));
-        }
-
-        for (n, i) in table.iter().enumerate() {
-            let cell = match verbose {
-                true => Cell::from(format!("_{}_", n)),
-                false => Cell::from(self.classes[n].name.clone()),
+        for (n, class) in self.classes.iter().enumerate() {
+            let column_header = match verbose {
+                true => class.name.clone(),
+                false => n.to_string()
             };
 
-            grid.add(cell);
-
-            for j in i {
-                let s = match j {
-                    &BLANK => "[!]".to_string(),
-                    _ => j.to_string(),
-                };
-                grid.add(Cell::from(s));
-            }
+            header.push(
+                Cell::new(column_header)
+                    .add_attribute(Attribute::Bold)
+            )
         }
 
-        let r = grid.fit_into_columns(table.len() + 1);
+        table.set_header(header);
 
-        print!("{r}");
+        let grid = self.make_naive_grid().transpose();
+
+        for (n, row) in grid.iter().enumerate() {
+            let row_header = match verbose {
+                true => self.classes[0].entries[n].0.date_naive().to_string(),
+                false => n.to_string()
+            };
+            let mut cells = vec![Cell::from(row_header)];
+
+            for item in row {
+                if *item == BLANK {
+                    cells.push(
+                        Cell::from("[!]")
+                            .fg(Color::Red)
+                    )
+                } else {
+                    let color = match item {
+                        95..=100 => Color::Green,
+                        _ => Color::Reset
+                    };
+
+                    cells.push(Cell::from(item).fg(color))
+                }
+            }
+
+            table.add_row(cells);
+        }
+
+        println!("{table}");
     }
 }
 
@@ -122,5 +140,6 @@ pub fn parse(data: &mut Data) {
 
         Commands::NewClass(new_class) => data.new_blank_class(new_class.name),
     }
-    data.print(!cli.verbose);
+
+    data.print(cli.verbose);
 }

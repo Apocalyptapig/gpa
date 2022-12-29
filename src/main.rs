@@ -124,15 +124,23 @@ impl Data {
         }
     }
 
-    #[allow(dead_code)]
+    fn set(&mut self, x: usize, y: usize, input: u8) {
+        self.classes[x].entries[y].1 = input;
+    }
+}
+
+trait Transpose {
+    fn transpose(&self) -> Vec<Vec<u8>>;
+}
+
+impl Transpose for Vec<Vec<u8>> {
     fn transpose(&self) -> Vec<Vec<u8>> {
         let mut r = Vec::new();
-        let table = self.make_naive_grid();
 
-        for n in 0..table[0].len() {
+        for n in 0..self[0].len() {
             let mut temp = Vec::new();
 
-            for i in table.clone() {
+            for i in self.clone() {
                 temp.push(i[n]);
             }
 
@@ -140,9 +148,5 @@ impl Data {
         }
 
         r
-    }
-
-    fn set(&mut self, x: usize, y: usize, input: u8) {
-        self.classes[x].entries[y].1 = input;
     }
 }
