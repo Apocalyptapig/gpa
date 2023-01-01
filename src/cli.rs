@@ -44,7 +44,7 @@ impl Data {
                     )
                 } else {
                     let color = match item {
-                        95..=100 => Color::Green,
+                        95.. => Color::Green,
                         _ => Color::Reset
                     };
 
@@ -138,7 +138,9 @@ pub fn parse(data: &mut Data) {
             }
         }
 
-        Commands::NewClass(new_class) => data.new_blank_class(new_class.name),
+        Commands::NewClass(new_class) => {
+            data.new_blank_class(new_class.name)
+        }
     }
 
     data.print(cli.verbose);

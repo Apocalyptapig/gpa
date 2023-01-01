@@ -150,3 +150,10 @@ impl Transpose for Vec<Vec<u8>> {
         r
     }
 }
+
+struct Profile {
+    decimal: Option<Vec<u8>>,
+    letter: Option<Vec<char>>,
+    gpa: Option<Vec<f32>>,
+    color: Vec<String>,
+}
